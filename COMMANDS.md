@@ -97,3 +97,7 @@ gcloud ai-platform jobs submit training $JOB_NAME \
  --batch-size=$BATCH_SIZE \
  --eval-steps $EVAL_STEPS \
 ```
+
+
+might be a good resource:
+https://medium.com/google-cloud-platform-by-cloud-ace/serverless-machine-learning-gcp-3df790270e19
