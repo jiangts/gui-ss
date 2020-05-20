@@ -10,6 +10,7 @@ args = parser.parse_args()
 
 
 train_ds, test_ds, validation_ds = parse_into_data_sets(args.annotations_path,
+        args.images_path,
         args.n_samples,
         args.num_threads)
 
