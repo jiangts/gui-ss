@@ -38,7 +38,7 @@ def _download_and_clean_file(filename, url):
 
 def decode_img(file_name):
     img = tf.io.read_file(file_name)
-    img = tf.image.decode_image(img, channels=3)
+    img = tf.image.decode_image(img, channels=3, dtype=tf.dtypes.float32)
     return img
 
 
@@ -61,8 +61,12 @@ def load_label_pair(file_name, img_dir):
             x_min, y_min, x_max, y_max = [int(v * scaling) for v in component['bounds']]
 
             img_crop = img[y_min:y_max, x_min:x_max]
-            ret_img = tf.image.resize_with_pad(img_crop, int(png_height/5), int(png_width/5))
+            # only method="nearest" preserves the dtype of uint8...
+            # https://www.tensorflow.org/api_docs/python/tf/image/resize
+            # ret_img = tf.image.resize_with_pad(img_crop, int(png_height/5), int(png_width/5), method='nearest')
 
+            # alternatively, decode images into float32 format
+            ret_img = tf.image.resize_with_pad(img_crop, int(png_height/5), int(png_width/5))
             label = component['componentLabel']
             return ret_img, label
     print(data_path)
@@ -73,7 +77,6 @@ def parse_into_data_sets(annot_dir, img_dir, num_files, num_threads):
     print("got glob", time.time() - b)
 
     b = time.time()
-    # tf.random.shuffle(images)
     # p = Pool(processes=num_threads)
     # ret = p.map(load_label_pair, images)
     ret = [load_label_pair(image, img_dir) for image in images]
@@ -86,16 +89,7 @@ def parse_into_data_sets(annot_dir, img_dir, num_files, num_threads):
     for idx, key in enumerate(labels):
         label_mapping[key] = idx
 
-    # data_points = [(x[0], label_mapping[x[1]]) for x in valid_pairs]
-
-    # # split 60/20/20
-    # train_pts = data_points[0:int(0.8*(len(data_points)))]
-    # test_pts = data_points[int(0.8*len(data_points)):]
-
-    # train_ds = tf.data.Dataset.from_generator(lambda: (pair for pair in train_pts), (tf.uint8, tf.uint8))
-    # test_ds = tf.data.Dataset.from_generator(lambda: (pair for pair in test_pts), (tf.uint8, tf.uint8))
-
-
+    # split 60/20/20
     x_data = [x[0] for x in valid_pairs]
     y_data = [label_mapping[x[1]] for x in valid_pairs]
     split1 = int(0.6*len(valid_pairs))
@@ -110,7 +104,7 @@ def parse_into_data_sets(annot_dir, img_dir, num_files, num_threads):
         print("Image shape: ", image.numpy().shape)
         print("Label: ", label.numpy())
         # plt.figure()
-        # plt.imshow(image)
+        # plt.imshow(image.numpy())
         # plt.colorbar()
         # plt.grid(False)
         # plt.show()
