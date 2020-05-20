@@ -4,8 +4,6 @@ import itertools
 from multiprocessing import Pool
 import json
 import time
-from tensorflow import keras
-import numpy as np
 import matplotlib.pyplot as plt
 
 
@@ -63,7 +61,7 @@ def load_label_pair(file_name, img_dir):
             x_min, y_min, x_max, y_max = [int(v * scaling) for v in component['bounds']]
 
             img_crop = img[y_min:y_max, x_min:x_max]
-            ret_img = tf.image.resize_with_pad(img_crop, png_height, png_width)
+            ret_img = tf.image.resize_with_pad(img_crop, int(png_height/5), int(png_width/5))
 
             label = component['componentLabel']
             return ret_img, label
@@ -72,39 +70,43 @@ def load_label_pair(file_name, img_dir):
 def parse_into_data_sets(annot_dir, img_dir, num_files, num_threads):
     b = time.time()
     images = tf.io.gfile.glob(os.path.join(annot_dir, '*.png'))[:num_files]
-    print('Number of images', len(images))
     print("got glob", time.time() - b)
 
     b = time.time()
-    tf.random.shuffle(images)
+    # tf.random.shuffle(images)
     # p = Pool(processes=num_threads)
     # ret = p.map(load_label_pair, images)
     ret = [load_label_pair(image, img_dir) for image in images]
     print("finish load", time.time() - b)
 
-    b = time.time()
     valid_pairs = [x for x in ret if x is not None]
     labels = set([x[1] for x in valid_pairs])
     label_mapping = {}
         # TODO make fixed mapping
     for idx, key in enumerate(labels):
-        label_mapping[key] = [idx]
-    data_points = [(x[0], label_mapping[x[1]]) for x in valid_pairs]
-    print("got labels", time.time() - b)
+        label_mapping[key] = idx
 
-    b = time.time()
-    # split 60/20/20
-    train_pts = data_points[0:int(0.6*(len(data_points)))]
-    test_pts = data_points[int(0.6 * len(data_points)):int(0.8*len(data_points))]
-    eval_pts = data_points[int(0.8*len(data_points)):]
-    print("split dataset", time.time() - b)
+    # data_points = [(x[0], label_mapping[x[1]]) for x in valid_pairs]
 
-    b = time.time()
-    train_ds = tf.data.Dataset.from_generator(lambda: (pair for pair in train_pts), (tf.uint8, tf.uint8))
-    test_ds = tf.data.Dataset.from_generator(lambda: (pair for pair in test_pts), (tf.uint8, tf.uint8))
-    eval_ds = tf.data.Dataset.from_generator(lambda: (pair for pair in eval_pts), (tf.uint8, tf.uint8))
+    # # split 60/20/20
+    # train_pts = data_points[0:int(0.8*(len(data_points)))]
+    # test_pts = data_points[int(0.8*len(data_points)):]
+
+    # train_ds = tf.data.Dataset.from_generator(lambda: (pair for pair in train_pts), (tf.uint8, tf.uint8))
+    # test_ds = tf.data.Dataset.from_generator(lambda: (pair for pair in test_pts), (tf.uint8, tf.uint8))
+
+
+    x_data = [x[0] for x in valid_pairs]
+    y_data = [label_mapping[x[1]] for x in valid_pairs]
+    split1 = int(0.6*len(valid_pairs))
+    split2 = int(0.8*len(valid_pairs))
+
+    train_ds = tf.data.Dataset.from_tensor_slices((x_data[0:split1], y_data[0:split1]))
+    val_ds = tf.data.Dataset.from_tensor_slices((x_data[split1:split2], y_data[split1:split2]))
+    test_ds = tf.data.Dataset.from_tensor_slices((x_data[split2:], y_data[split2:]))
+
     # sample one point to make sure the ds is loaded properly
-    for image, label in train_ds.take(5):
+    for image, label in train_ds.take(1):
         print("Image shape: ", image.numpy().shape)
         print("Label: ", label.numpy())
         # plt.figure()
@@ -113,7 +115,5 @@ def parse_into_data_sets(annot_dir, img_dir, num_files, num_threads):
         # plt.grid(False)
         # plt.show()
 
-    print("from dataset generator", time.time() - b)
-
-    return train_ds, eval_ds, test_ds
+    return train_ds, val_ds, test_ds
 
