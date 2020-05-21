@@ -37,6 +37,9 @@ def _download_and_clean_file(filename, url):
 
 
 def decode_img(file_name):
+    if tf.io.gfile.exists(file_name) is False:
+        return None
+
     with tf.io.gfile.GFile(file_name, 'rb') as f:
         img = f.read()
         img = tf.image.decode_image(img, channels=3, dtype=tf.dtypes.float32)
@@ -53,6 +56,9 @@ def load_label_pair(file_name, img_dir):
     png_width = 1440
     # scaling = 0.75
     # png and jpg are diff dimensions... 2560 height vs 1920
+    if img is None or tf.io.gfile.exists(data_path) is False:
+        return None
+
     with tf.io.gfile.GFile(data_path, 'r') as f:
         labeled_data = json.load(f)
         # TODO check multiple children

@@ -22,7 +22,8 @@ REQUIRED_PACKAGES = [
     'six>=1.11',
     'google-api-python-client',
     'google-cloud-storage',
-    'tensorflow>=2',
+    'tensorflow>=2.1,<2.2',
+    'matplotlib>=3',
     'mlflow>1.0,<2'
 ]
 
