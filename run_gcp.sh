@@ -20,4 +20,4 @@ gcloud ai-platform jobs submit training $JOB_NAME \
  --train-steps $TRAIN_STEPS \
  --batch-size=$BATCH_SIZE \
  --eval-steps $EVAL_STEPS \
- --n_samples=1000
+ --n_samples=50000

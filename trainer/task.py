@@ -75,9 +75,9 @@ def get_args():
         help='Number of records to read during each training step, default=128')
     parser.add_argument(
         '--learning-rate',
-        default=.01,
+        default=1e-3,
         type=float,
-        help='Learning rate for gradient descent, default=.01')
+        help='Learning rate for gradient descent')
     parser.add_argument(
         '--eval-steps',
         help='Number of steps to run evaluation for, at each checkpoint',
