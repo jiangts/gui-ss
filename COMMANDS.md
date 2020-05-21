@@ -108,6 +108,7 @@ https://medium.com/google-cloud-platform-by-cloud-ace/serverless-machine-learnin
 New commands:
 To run locally
 ```
+. venv/bin/activate
 export JOB_DIR=mlflow
 export TRAIN_STEPS=100
 export EVAL_STEPS=1
