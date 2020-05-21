@@ -109,5 +109,5 @@ def parse_into_data_sets(annot_dir, img_dir, num_files, num_threads):
         # plt.grid(False)
         # plt.show()
 
-    return train_ds, val_ds, test_ds
+    return train_ds, val_ds, test_ds, label_mapping
 
