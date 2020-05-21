@@ -74,6 +74,9 @@ def load_label_pair(file_name, img_dir):
                 print(e)
     print(data_path)
 
+
+
+# other data loading techniques: https://www.tensorflow.org/tutorials/load_data/images#load_using_tfdata
 def parse_into_data_sets(annot_dir, img_dir, num_files, num_threads):
     b = time.time()
     images = tf.io.gfile.glob(os.path.join(annot_dir, '*.png'))[:num_files]

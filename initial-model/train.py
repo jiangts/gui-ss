@@ -32,32 +32,33 @@ num_classes = len(classes)
 print(training_pair[0].shape, num_classes)
 
 model = keras.Sequential()
-model.add(keras.layers.Conv2D(32, (3, 3), padding='same',
+model.add(keras.layers.Conv2D(32, (3, 3), padding='same', activation='relu',
     input_shape=training_pair[0].shape))
-model.add(keras.layers.Activation('relu'))
-model.add(keras.layers.Conv2D(32, (3, 3)))
-model.add(keras.layers.Activation('relu'))
+# model.add(keras.layers.Conv2D(32, (3, 3), activation='relu'))
 model.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
 model.add(keras.layers.Dropout(0.25))
 
-model.add(keras.layers.Conv2D(64, (3, 3), padding='same'))
-model.add(keras.layers.Activation('relu'))
-model.add(keras.layers.Conv2D(64, (3, 3)))
-model.add(keras.layers.Activation('relu'))
+# model.add(keras.layers.Conv2D(64, (3, 3), padding='same', activation='relu'))
+model.add(keras.layers.Conv2D(64, (3, 3), activation='relu'))
 model.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
 model.add(keras.layers.Dropout(0.25))
 
 model.add(keras.layers.Flatten())
-model.add(keras.layers.Dense(512))
-model.add(keras.layers.Activation('relu'))
+# model.add(keras.layers.Dense(512, activation='relu'))
+model.add(keras.layers.Dense(128, activation='relu'))
 model.add(keras.layers.Dropout(0.5))
-model.add(keras.layers.Dense(num_classes))
-model.add(keras.layers.Activation('softmax'))
+model.add(keras.layers.Dense(num_classes, activation='softmax'))
 
+# linear baseline
+# model = keras.Sequential([
+#     keras.layers.Flatten(input_shape=training_pair[0].shape),
+#     keras.layers.Dense(num_classes)
+#     ])
 
+top3_acc = tf.keras.metrics.TopKCategoricalAccuracy(k=3, name='top3acc')
 model.compile(optimizer='adam',
               loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-              metrics=['accuracy'])
+              metrics=['categorical_accuracy', top3_acc])
 
 ## Train model
 my_callbacks = [
@@ -78,7 +79,7 @@ model.fit(train_dataset, epochs=args.epochs, callbacks=my_callbacks, validation_
 
 
 ## Test model
-test_loss, test_acc = model.evaluate(test_dataset, verbose=2)
+metrics = model.evaluate(test_dataset, verbose=2)
 
-print('\nTest accuracy:', test_acc)
+print('\nTest metrics:', metrics)
 
