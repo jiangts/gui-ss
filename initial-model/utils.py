@@ -66,9 +66,12 @@ def load_label_pair(file_name, img_dir):
             # ret_img = tf.image.resize_with_pad(img_crop, int(png_height/5), int(png_width/5), method='nearest')
 
             # alternatively, decode images into float32 format
-            ret_img = tf.image.resize_with_pad(img_crop, int(png_height/5), int(png_width/5))
-            label = component['componentLabel']
-            return ret_img, label
+            try:
+                ret_img = tf.image.resize_with_pad(img_crop, int(png_height/5), int(png_width/5))
+                label = component['componentLabel']
+                return ret_img, label
+            except Exception as e:
+                print(e)
     print(data_path)
 
 def parse_into_data_sets(annot_dir, img_dir, num_files, num_threads):

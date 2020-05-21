@@ -8,6 +8,8 @@ parser.add_argument('--num_threads', type=int, default=50)
 parser.add_argument('--n_samples', type=int, default=1000)
 parser.add_argument('--annotations_path', default='/Users/jiangts/Documents/stanford/cs231n/final_project/semantic_annotations')
 parser.add_argument('--images_path', default='/Users/jiangts/Documents/stanford/cs231n/final_project/combined')
+parser.add_argument('--batch_size', type=int, default=32)
+parser.add_argument('--epochs', type=int, default=20)
 args = parser.parse_args()
 
 
@@ -27,6 +29,7 @@ train_ds, val_ds, test_ds, classes = parse_into_data_sets(args.annotations_path,
 #     ])
 training_pair = list(train_ds.take(1).as_numpy_iterator())[0]
 num_classes = len(classes)
+print(training_pair[0].shape, num_classes)
 
 model = keras.Sequential()
 model.add(keras.layers.Conv2D(32, (3, 3), padding='same',
@@ -64,13 +67,13 @@ my_callbacks = [
         ]
 
 
-train_dataset = train_ds.shuffle(buffer_size=1024).batch(64)
-val_dataset = train_ds.shuffle(buffer_size=1024).batch(64)
-test_dataset = test_ds.batch(64)
+train_dataset = train_ds.shuffle(buffer_size=1024).batch(args.batch_size)
+val_dataset = train_ds.shuffle(buffer_size=1024).batch(args.batch_size)
+test_dataset = test_ds.batch(args.batch_size)
 
 # Since the dataset already takes care of batching,
 # we don't pass a `batch_size` argument.
-model.fit(train_dataset, epochs=10, callbacks=my_callbacks, validation_data=val_dataset)
+model.fit(train_dataset, epochs=args.epochs, callbacks=my_callbacks, validation_data=val_dataset)
 
 
 
