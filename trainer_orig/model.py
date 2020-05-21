@@ -18,7 +18,6 @@ from __future__ import division
 from __future__ import print_function
 
 import tensorflow as tf
-from tensorflow import keras
 
 
 def input_fn(features, labels, shuffle, num_epochs, batch_size):
@@ -51,7 +50,7 @@ def input_fn(features, labels, shuffle, num_epochs, batch_size):
     return dataset
 
 
-def create_keras_model(input_shape, num_classes, learning_rate):
+def create_keras_model(input_dim, learning_rate):
     """Creates Keras Model for Binary Classification.
 
     The single output node + Sigmoid activation makes this a Logistic
@@ -64,30 +63,23 @@ def create_keras_model(input_shape, num_classes, learning_rate):
     Returns:
       The compiled Keras model (still needs to be trained)
     """
+    Dense = tf.keras.layers.Dense
+    model = tf.keras.Sequential(
+        [
+            Dense(100, activation=tf.nn.relu, kernel_initializer='uniform',
+                  input_shape=(input_dim,)),
+            Dense(75, activation=tf.nn.relu),
+            Dense(50, activation=tf.nn.relu),
+            Dense(25, activation=tf.nn.relu),
+            Dense(1, activation=tf.nn.sigmoid)
+        ])
 
-    model = keras.Sequential()
-    model.add(keras.layers.Conv2D(32, (3, 3), padding='same', activation='relu',
-        input_shape=input_shape))
-    # model.add(keras.layers.Conv2D(32, (3, 3), activation='relu'))
-    model.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
-    # model.add(keras.layers.Dropout(0.25))
-
-    # model.add(keras.layers.Conv2D(64, (3, 3), padding='same', activation='relu'))
-    # model.add(keras.layers.Conv2D(64, (3, 3), activation='relu'))
-    # model.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
-    # model.add(keras.layers.Dropout(0.25))
-
-    model.add(keras.layers.Flatten())
-    # model.add(keras.layers.Dense(512, activation='relu'))
-    model.add(keras.layers.Dense(128, activation='relu'))
-    # model.add(keras.layers.Dropout(0.5))
-    model.add(keras.layers.Dense(num_classes, activation='softmax'))
+    # Custom Optimizer:
+    # https://www.tensorflow.org/api_docs/python/tf/train/RMSPropOptimizer
 
     # Compile Keras model
-    top3_acc = keras.metrics.SparseTopKCategoricalAccuracy(k=3, name='top3acc')
-    opt = keras.optimizers.Adam(learning_rate=1e-4)
-
-    model.compile(optimizer=opt,
-                  loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-                  metrics=['sparse_categorical_accuracy', top3_acc])
+    model.compile(
+        loss='binary_crossentropy',
+        optimizer=tf.keras.optimizers.RMSprop(lr=learning_rate),
+        metrics=['accuracy'])
     return model

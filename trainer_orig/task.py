@@ -30,7 +30,6 @@ from time import time
 
 from . import model
 from . import utils
-from . import data_loader
 from . import model_deployment
 
 import mlflow
@@ -49,14 +48,13 @@ def get_args():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--images_path',
-        help='GCS file or local paths to images',
-        default='gs://ui-scene-seg_training/data/combined/combined/')
+        '--train-files',
+        help='GCS file or local paths to training data',
+        default='gs://cloud-samples-data/ml-engine/census/data/adult.data.csv')
     parser.add_argument(
-        '--annotations_path',
-        help='GCS file or local paths to annotations',
-        default='gs://ui-scene-seg_training/data/semantic_annotations/')
-    parser.add_argument('--n_samples', type=int, default=1000)
+        '--eval-files',
+        help='GCS file or local paths to evaluation data',
+        default='gs://cloud-samples-data/ml-engine/census/data/adult.test.csv')
     parser.add_argument(
         '--job-dir',
         type=str,
@@ -173,51 +171,31 @@ def train_and_evaluate(args):
     else:
         logging.info('Reusing job_dir {} if it exists'.format(args.job_dir))
 
-    # train_x, train_y, eval_x, eval_y = utils.load_data(args.train_files,
-    #                                                    args.eval_files)
-    train_ds, val_ds, test_ds, classes = data_loader.load_data(
-            args.annotations_path,
-            args.images_path,
-            args.n_samples,
-            num_threads=10)
-
-    training_pair = list(train_ds.take(1).as_numpy_iterator())[0]
-    num_classes = len(classes)
-    input_dim = training_pair[0].shape
-
-    num_train_examples = len(list(train_ds))
-    num_eval_examples = len(list(val_ds))
-
+    train_x, train_y, eval_x, eval_y = utils.load_data(args.train_files,
+                                                       args.eval_files)
     # dimensions
-    # num_train_examples, input_dim = train_x.shape
-    # num_eval_examples = eval_x.shape[0]
+    num_train_examples, input_dim = train_x.shape
+    num_eval_examples = eval_x.shape[0]
 
     # Create the Keras Model
     keras_model = model.create_keras_model(
-        input_shape=input_dim,
-        num_classes=num_classes,
-        learning_rate=args.learning_rate)
+        input_dim=input_dim, learning_rate=args.learning_rate)
 
-    training_dataset = train_ds.shuffle(buffer_size=1024).repeat(args.num_epochs).batch(args.batch_size)
-    validation_dataset = train_ds.shuffle(buffer_size=1024).repeat(args.num_epochs).batch(args.batch_size)
-    test_dataset = test_ds.batch(args.batch_size)
-    # # Pass a numpy array by passing DataFrame.values
-    # training_dataset = model.input_fn(
-    #     features=train_x.values,
-    #     labels=train_y,
-    #     shuffle=True,
-    #     num_epochs=args.num_epochs,
-    #     batch_size=args.batch_size)
+    # Pass a numpy array by passing DataFrame.values
+    training_dataset = model.input_fn(
+        features=train_x.values,
+        labels=train_y,
+        shuffle=True,
+        num_epochs=args.num_epochs,
+        batch_size=args.batch_size)
 
-    # # Pass a numpy array by passing DataFrame.values
-    # validation_dataset = model.input_fn(
-    #     features=eval_x.values,
-    #     labels=eval_y,
-    #     shuffle=False,
-    #     num_epochs=args.num_epochs,
-    #     batch_size=num_eval_examples)
-
-    ## TODO: keras_model.evaluate on test_dataset
+    # Pass a numpy array by passing DataFrame.values
+    validation_dataset = model.input_fn(
+        features=eval_x.values,
+        labels=eval_y,
+        shuffle=False,
+        num_epochs=args.num_epochs,
+        batch_size=num_eval_examples)
 
     start_time = time()
     # Set MLflow tracking URI
@@ -245,8 +223,6 @@ def train_and_evaluate(args):
         tensorboard_callback = tf.keras.callbacks.TensorBoard(
             tensorboard_path,
             histogram_freq=1)
-        # Early stopping callback
-        early_stopping_callback = tf.keras.callbacks.EarlyStopping(patience=3)
 
         history = keras_model.fit(
             training_dataset,
@@ -256,13 +232,12 @@ def train_and_evaluate(args):
             validation_steps=args.eval_steps,
             verbose=1,
             callbacks=[lr_decay_callback, tensorboard_callback,
-                       early_stopping_callback, mlflow_callback])
+                       mlflow_callback])
         metrics = history.history
         logging.info(metrics)
         keras_model.summary()
-        mlflow.log_param('images_path', args.images_path)
-        mlflow.log_param('annotations_path', args.annotations_path)
-        mlflow.log_param('n_samples', args.n_samples)
+        mlflow.log_param('train_files', args.train_files)
+        mlflow.log_param('eval_files', args.eval_files)
         mlflow.log_param('num_epochs', args.num_epochs)
         mlflow.log_param('batch_size', args.batch_size)
         mlflow.log_param('learning_rate', args.learning_rate)
@@ -272,13 +247,14 @@ def train_and_evaluate(args):
         mlflow.log_param('steps_per_epoch',
                          int(num_train_examples / args.batch_size))
         # Add metrics
-        for metric in metrics.keys():
-            _mlflow_log_metrics(metrics, metric)
+        _mlflow_log_metrics(metrics, 'loss')
+        _mlflow_log_metrics(metrics, 'acc')
+        _mlflow_log_metrics(metrics, 'val_loss')
+        _mlflow_log_metrics(metrics, 'val_acc')
         _mlflow_log_metrics(metrics, 'lr')
-
         # Export SavedModel
         model_local_path = os.path.join(args.job_dir, run_id, 'model')
-        tf.keras.models.save_model(keras_model, model_local_path)
+        tf.keras.experimental.export_saved_model(keras_model, model_local_path)
         # Define artifacts.
         logging.info('Model exported to: {}'.format(model_local_path))
         # MLflow workaround since is unable to read GCS path.
