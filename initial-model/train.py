@@ -36,17 +36,17 @@ model.add(keras.layers.Conv2D(32, (3, 3), padding='same', activation='relu',
     input_shape=training_pair[0].shape))
 # model.add(keras.layers.Conv2D(32, (3, 3), activation='relu'))
 model.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
-model.add(keras.layers.Dropout(0.25))
+# model.add(keras.layers.Dropout(0.25))
 
 # model.add(keras.layers.Conv2D(64, (3, 3), padding='same', activation='relu'))
-model.add(keras.layers.Conv2D(64, (3, 3), activation='relu'))
-model.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
-model.add(keras.layers.Dropout(0.25))
+# model.add(keras.layers.Conv2D(64, (3, 3), activation='relu'))
+# model.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
+# model.add(keras.layers.Dropout(0.25))
 
 model.add(keras.layers.Flatten())
 # model.add(keras.layers.Dense(512, activation='relu'))
 model.add(keras.layers.Dense(128, activation='relu'))
-model.add(keras.layers.Dropout(0.5))
+# model.add(keras.layers.Dropout(0.5))
 model.add(keras.layers.Dense(num_classes, activation='softmax'))
 
 # linear baseline
@@ -55,10 +55,12 @@ model.add(keras.layers.Dense(num_classes, activation='softmax'))
 #     keras.layers.Dense(num_classes)
 #     ])
 
-top3_acc = tf.keras.metrics.TopKCategoricalAccuracy(k=3, name='top3acc')
-model.compile(optimizer='adam',
+top3_acc = tf.keras.metrics.SparseTopKCategoricalAccuracy(k=3, name='top3acc')
+opt = keras.optimizers.Adam(learning_rate=1e-4)
+
+model.compile(optimizer=opt,
               loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-              metrics=['categorical_accuracy', top3_acc])
+              metrics=['sparse_categorical_accuracy', top3_acc])
 
 ## Train model
 my_callbacks = [
