@@ -101,3 +101,41 @@ gcloud ai-platform jobs submit training $JOB_NAME \
 
 might be a good resource:
 https://medium.com/google-cloud-platform-by-cloud-ace/serverless-machine-learning-gcp-3df790270e19
+
+
+
+
+New commands:
+To run locally
+```
+export JOB_DIR=mlflow
+export TRAIN_STEPS=100
+export EVAL_STEPS=1
+export BATCH_SIZE=128
+
+python -m trainer.task --images_path=/Users/jiangts/Documents/stanford/cs231n/final_project/combined --annotations_path=/Users/jiangts/Documents/stanford/cs231n/final_project/semantic_annotations --job-dir=$JOB_DIR --train-steps=$TRAIN_STEPS --eval-steps=$EVAL_STEPS --batch-size=4 --num-epochs=5 --n_samples=128
+```
+To run remotely
+```
+export JOB_DIR=mlflow
+export TRAIN_STEPS=1000
+export EVAL_STEPS=1
+export BATCH_SIZE=128
+export DATE=`date '+%Y%m%d_%H%M%S'`
+export JOB_NAME=mlflow_$DATE
+export REGION=us-central1
+export GCS_JOB_DIR=gs://ui-scene-seg_training/jobs/$JOB_NAME
+gcloud ai-platform jobs submit training $JOB_NAME \
+ --stream-logs \
+ --runtime-version 2.1 \
+ --python-version 3.5 \
+ --job-dir $GCS_JOB_DIR \
+ --package-path trainer \
+ --module-name trainer.task \
+ --region $REGION \
+ -- \
+ --train-steps $TRAIN_STEPS \
+ --batch-size=$BATCH_SIZE \
+ --eval-steps $EVAL_STEPS \
+ --n_samples=1000
+ ```
