@@ -18,7 +18,7 @@ train_ds, val_ds, test_ds, classes = parse_into_data_sets(args.annotations_path,
         args.n_samples,
         args.num_threads)
 
-
+print(classes)
 ## see example: https://keras.io/examples/vision/image_classification_from_scratch/
 
 ## Build and compile model
