@@ -37,6 +37,9 @@ import mlflow
 import mlflow.tensorflow
 import tensorflow as tf
 
+# from tensorflow.keras.callbacks import ModelCheckpoint
+# from tensorflow.keras.callbacks import ReduceLROnPlateau
+
 
 # mlflow.tensorflow.autolog()
 
