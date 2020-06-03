@@ -37,28 +37,20 @@ label_mapping = {
         }
 
 
-
-def get_img(img_path):
-    if tf.io.gfile.exists(img_path):
-        img = tf.io.read_file(img_path)
-        img = tf.image.decode_image(img, channels=3, dtype=tf.dtypes.float32)
-        return img
-
 def process_img(img_path, bounds):
-    # img = get_img(img_path)
     img = tf.io.read_file(img_path)
-    # img = tf.image.decode_image(img, channels=3, dtype=tf.dtypes.float32)
+    img = tf.image.decode_image(img, channels=3, dtype=tf.dtypes.float32)
 
     png_height = 2560
     png_width = 1440
     out_height = 512 # int(png_height/5)
     out_width = 288 # int(png_width/5)
 
-    img = tf.image.decode_jpeg(img, channels=3)
-    img = tf.image.convert_image_dtype(img, tf.float32)
-    img = tf.image.resize(img, [png_height, png_width])
+    # img = tf.image.decode_jpeg(img, channels=3)
+    # img = tf.image.convert_image_dtype(img, tf.float32)
+    # img = tf.image.resize(img, [png_height, png_width])
 
-    # img = tf.image.resize_with_pad(img, png_height, png_width)
+    img = tf.image.resize_with_pad(img, png_height, png_width)
 
     xmin, ymin, xmax, ymax = bounds
     img = img[ymin:ymax, xmin:xmax]
@@ -68,17 +60,18 @@ def process_img(img_path, bounds):
 
 
 def process_path(img_path,xmin,ymin,xmax,ymax,label):
-    # label = label_mapping[label]
+    label = tf.strings.to_number(label, out_type=tf.dtypes.int32)
     img = process_img(img_path, [xmin,ymin,xmax,ymax])
-    return img, tf.strings.join([img_path,label])
+    return img, label
 
 
 def show(image, label):
-  plt.figure()
-  plt.imshow(image)
-  plt.title(label.numpy().decode('utf-8'))
-  plt.axis('off')
-  plt.show()
+    plt.figure()
+    plt.imshow(image)
+    if isinstance(label.numpy(), str):
+        plt.title(label.numpy().decode('utf-8'))
+    plt.axis('off')
+    plt.show()
 
 
 
@@ -99,16 +92,17 @@ def load_data(registry_file, num_threads=AUTOTUNE):
     # for img, label in dataset.shuffle(buffer_size=1024).take(50):
     #    show(img, label)
 
-    train_ds = dataset.drop(num)
-    test_ds = dataset.drop(10000).take(10000)
+    train_ds = dataset.skip(20000)
+    test_ds = dataset.skip(10000).take(10000)
     val_ds = dataset.take(10000)
 
     for image, label in dataset.take(1):
+        show(image, label)
         print("Image shape: ", image.numpy().shape)
         print("Label: ", label.numpy())
 
     return train_ds, val_ds, test_ds, label_mapping
 
 
-# load_data('/Users/jiangts/Documents/stanford/cs231n/final_project/frcnn_annot.txt')
+load_data('/Users/jiangts/Documents/stanford/cs231n/final_project/classify.txt')
 
