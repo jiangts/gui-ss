@@ -47,13 +47,18 @@ def get_img(img_path):
 def process_img(img_path, bounds):
     # img = get_img(img_path)
     img = tf.io.read_file(img_path)
-    img = tf.image.decode_image(img, channels=3, dtype=tf.dtypes.float32)
+    # img = tf.image.decode_image(img, channels=3, dtype=tf.dtypes.float32)
+
     png_height = 2560
     png_width = 1440
     out_height = 512 # int(png_height/5)
     out_width = 288 # int(png_width/5)
 
-    img = tf.image.resize_with_pad(img, png_height, png_width)
+    img = tf.image.decode_jpeg(img, channels=3)
+    img = tf.image.convert_image_dtype(img, tf.float32)
+    img = tf.image.resize(img, [png_height, png_width])
+
+    # img = tf.image.resize_with_pad(img, png_height, png_width)
 
     xmin, ymin, xmax, ymax = bounds
     img = img[ymin:ymax, xmin:xmax]
@@ -65,7 +70,7 @@ def process_img(img_path, bounds):
 def process_path(img_path,xmin,ymin,xmax,ymax,label):
     # label = label_mapping[label]
     img = process_img(img_path, [xmin,ymin,xmax,ymax])
-    return img, label
+    return img, tf.strings.join([img_path,label])
 
 
 def show(image, label):
@@ -84,23 +89,26 @@ def load_data(registry_file, num_threads=AUTOTUNE):
     dataset = dataset.apply(tf.data.experimental.ignore_errors())
 
 
-    for img, label in dataset.shuffle(buffer_size=1024).take(50):
-        show(img, label)
+    # img = tf.io.read_file('/Users/jiangts/Documents/stanford/cs231n/final_project/combined/28861.jpg')
+    # img = tf.image.decode_image(img, channels=3, dtype=tf.dtypes.float32)
+    # plt.figure()
+    # plt.imshow(img)
+    # plt.axis('off')
+    # plt.show()
+
+    # for img, label in dataset.shuffle(buffer_size=1024).take(50):
+    #    show(img, label)
+
+    train_ds = dataset.drop(num)
+    test_ds = dataset.drop(10000).take(10000)
+    val_ds = dataset.take(10000)
+
+    for image, label in dataset.take(1):
+        print("Image shape: ", image.numpy().shape)
+        print("Label: ", label.numpy())
+
+    return train_ds, val_ds, test_ds, label_mapping
 
 
-load_data('/Users/jiangts/Documents/stanford/cs231n/final_project/frcnn_annot.txt')
+# load_data('/Users/jiangts/Documents/stanford/cs231n/final_project/frcnn_annot.txt')
 
-#    list_ds = tf.data.Dataset.list_files(os.path.join(annot_dir, '*json'), seed=0)
-#    labeled_ds = list_ds.map(lambda file_path: tf.py_function(func=process_path,
-#        inp=[file_path, img_dir], Tout=[tf.float32,tf.int8]), num_parallel_calls=num_threads)
-#
-#    train_ds = dataset.drop(num)
-#    test_ds = dataset.drop(10000).take(10000)
-#    val_ds = dataset.take(10000)
-#
-#    for image, label in dataset.take(1):
-#        print("Image shape: ", image.numpy().shape)
-#        print("Label: ", label.numpy())
-#
-#    return train_ds, val_ds, test_ds, label_mapping
-#

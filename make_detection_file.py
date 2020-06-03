@@ -85,7 +85,22 @@ def frcnn_line(img_path, boxes):
     return '\n'.join(rows)
 
 
-def process(path, yolov3, frcnn):
+def classify_line(img_path, boxes):
+    rows = []
+
+    base=os.path.basename(img_path)
+    num,ext = os.path.splitext(base)
+    img_path = 'gs://ui-scene-seg_training/data/combined/combined/'+ num+'.jpg'
+
+    for box in boxes:
+        b = map(str, box['bounds'])
+        l = box['label']
+        s = img_path + ',' + ','.join(b) + ',' + str(label_mapping[l])
+        rows.append(s)
+    return '\n'.join(rows)
+
+
+def process(path, yolov3, frcnn, classify):
     boxes = []
     img_path = get_img_path(path)
 
@@ -95,6 +110,7 @@ def process(path, yolov3, frcnn):
         boxes = get_boxes(annot, [])
         yolov3.write(yolov3_line(img_path, boxes)+'\n')
         frcnn.write(frcnn_line(img_path, boxes)+'\n')
+        classify.write(classify_line(img_path, boxes)+'\n')
 
 
 
@@ -102,10 +118,12 @@ files = glob.glob(os.path.join(ANNOTATION_PATH, './*json'))
 
 yolov3 = open('yolov3_annot.txt', 'a')
 frcnn = open('frcnn_annot.txt', 'a')
+classify = open('classify.txt', 'a')
 
 for i, path in enumerate(files):
-    process(path, yolov3, frcnn)
+    process(path, yolov3, frcnn, classify)
     print('processed', i)
 
 yolov3.close()
 frcnn.close()
+classify.close()
