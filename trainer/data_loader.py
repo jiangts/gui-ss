@@ -1,5 +1,6 @@
 import tensorflow as tf
 import matplotlib.pyplot as plt
+import os
 
 
 print('using tensorflow', tf.__version__)
@@ -75,11 +76,26 @@ def show(image, label):
 
 
 
-def load_data(registry_file, num_threads=AUTOTUNE):
+def make_dataset(registry_file, num_threads=AUTOTUNE):
     box_types  = [tf.string, tf.int32, tf.int32, tf.int32, tf.int32, tf.string]
     registry = tf.data.experimental.CsvDataset(registry_file, box_types , header=False)
     dataset = registry.map(process_path, num_parallel_calls=num_threads)
     dataset = dataset.apply(tf.data.experimental.ignore_errors())
+    return dataset
+
+
+
+# gsplit -l 260830 -d --additional-suffix=.txt classify.txt classify
+def load_data(registry_file, num_splits=5, num_threads=AUTOTUNE):
+    filename, file_extension = os.path.splitext(registry_file)
+    datasets = []
+    for i in range(num_splits):
+        registry_file = filename + str(i).zfill(2) + file_extension
+        datasets.append(make_dataset(registry_file))
+    s1, s2, s3, s4, s5 = datasets
+    train_ds = s1.concatenate(s2).concatenate(s3)
+    val_ds = s4
+    test_ds = s5
 
 
     # img = tf.io.read_file('/Users/jiangts/Documents/stanford/cs231n/final_project/combined/28861.jpg')
@@ -96,11 +112,7 @@ def load_data(registry_file, num_threads=AUTOTUNE):
     num_eval = int(num_examples/5)
     num_train = num_examples - num_eval * 2
 
-    train_ds = dataset.skip(num_eval * 2)
-    test_ds = dataset.skip(num_eval).take(num_eval)
-    val_ds = dataset.take(num_eval)
-
-    for image, label in dataset.take(1):
+    for image, label in train_ds.take(1):
         # show(image, label)
         print("Image shape: ", image.numpy().shape)
         print("Label: ", label.numpy())

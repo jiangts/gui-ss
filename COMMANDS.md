@@ -118,7 +118,7 @@ export EVAL_STEPS=1
 export BATCH_SIZE=128
 
 python -m trainer.task \
- --registry_path=/Users/jiangts/Documents/stanford/cs231n/final_project/classify.txt \
+ --registry-path=/Users/jiangts/Documents/stanford/cs231n/final_project/classify.txt \
  --job-dir=$JOB_DIR \
  --train-steps=$TRAIN_STEPS \
  --eval-steps=$EVAL_STEPS \
@@ -145,6 +145,5 @@ gcloud ai-platform jobs submit training $JOB_NAME \
  -- \
  --train-steps 1000 \
  --batch-size=64 \
- --buffer-size=128 \
  --eval-steps 1 \
  ```

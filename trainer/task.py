@@ -61,7 +61,7 @@ def get_args():
     #     default='gs://ui-scene-seg_training/data/semantic_annotations/')
     # parser.add_argument('--n_samples', type=int, default=1000)
     parser.add_argument(
-        '--registry_path',
+        '--registry-path',
         help='GCS file or local paths to data registry',
         default='gs://ui-scene-seg_training/data/classify.txt')
     parser.add_argument(
@@ -81,7 +81,7 @@ def get_args():
         type=int,
         help='Number of records to read during each training step, default=128')
     parser.add_argument(
-        '--buffer_size',
+        '--buffer-size',
         default=1024,
         type=int,
         help='Dataset buffer size, default=1024')

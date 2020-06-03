@@ -315,8 +315,8 @@ def create_keras_model(input_shape, num_classes, learning_rate):
 
 
 
-    depth=110
-    model = resnet_v2(input_shape=input_shape, depth=depth, num_classes=num_classes)
+    # depth=20
+    # model = resnet_v2(input_shape=input_shape, depth=depth, num_classes=num_classes)
     # model = resnet_v1(input_shape=input_shape, depth=depth, num_classes=num_classes)
 
 
