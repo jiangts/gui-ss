@@ -92,17 +92,24 @@ def load_data(registry_file, num_threads=AUTOTUNE):
     # for img, label in dataset.shuffle(buffer_size=1024).take(50):
     #    show(img, label)
 
-    train_ds = dataset.skip(20000)
-    test_ds = dataset.skip(10000).take(10000)
-    val_ds = dataset.take(10000)
+    num_examples = 1304147
+    num_eval = int(num_examples/5)
+    num_train = num_examples - num_eval * 2
+
+    train_ds = dataset.skip(num_eval * 2)
+    test_ds = dataset.skip(num_eval).take(num_eval)
+    val_ds = dataset.take(num_eval)
 
     for image, label in dataset.take(1):
-        show(image, label)
+        # show(image, label)
         print("Image shape: ", image.numpy().shape)
         print("Label: ", label.numpy())
 
-    return train_ds, val_ds, test_ds, label_mapping
+    input_dim = (512, 288, 3)
+
+    return train_ds, val_ds, test_ds, label_mapping, input_dim, num_train, num_eval
 
 
-load_data('/Users/jiangts/Documents/stanford/cs231n/final_project/classify.txt')
+# load_data('/Users/jiangts/Documents/stanford/cs231n/final_project/classify.txt')
+# load_data('gs://ui-scene-seg_training/data/classify.txt')
 

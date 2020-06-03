@@ -51,15 +51,19 @@ def get_args():
       Dictionary of arguments.
     """
     parser = argparse.ArgumentParser()
+    # parser.add_argument(
+    #     '--images_path',
+    #     help='GCS file or local paths to images',
+    #     default='gs://ui-scene-seg_training/data/combined/combined/')
+    # parser.add_argument(
+    #     '--annotations_path',
+    #     help='GCS file or local paths to annotations',
+    #     default='gs://ui-scene-seg_training/data/semantic_annotations/')
+    # parser.add_argument('--n_samples', type=int, default=1000)
     parser.add_argument(
-        '--images_path',
-        help='GCS file or local paths to images',
-        default='gs://ui-scene-seg_training/data/combined/combined/')
-    parser.add_argument(
-        '--annotations_path',
-        help='GCS file or local paths to annotations',
-        default='gs://ui-scene-seg_training/data/semantic_annotations/')
-    parser.add_argument('--n_samples', type=int, default=1000)
+        '--registry_path',
+        help='GCS file or local paths to data registry',
+        default='gs://ui-scene-seg_training/data/classify.txt')
     parser.add_argument(
         '--job-dir',
         type=str,
@@ -73,9 +77,14 @@ def get_args():
         help='Number of times to go through the data, default=20')
     parser.add_argument(
         '--batch-size',
-        default=64,
+        default=128,
         type=int,
         help='Number of records to read during each training step, default=128')
+    parser.add_argument(
+        '--buffer_size',
+        default=1024,
+        type=int,
+        help='Dataset buffer size, default=1024')
     parser.add_argument(
         '--learning-rate',
         default=1e-3,
@@ -91,7 +100,7 @@ def get_args():
         action='store_true',
         default=False,
         help="""
-          Flag to decide if the model checkpoint should be re-used from the 
+          Flag to decide if the model checkpoint should be re-used from the
           job-dir.
           If set to False then the job-dir will be deleted.
           """)
@@ -178,18 +187,15 @@ def train_and_evaluate(args):
 
     # train_x, train_y, eval_x, eval_y = utils.load_data(args.train_files,
     #                                                    args.eval_files)
-    train_ds, val_ds, test_ds, classes = data_loader.load_data(
-            args.annotations_path,
-            args.images_path,
-            args.n_samples,
-            num_threads=10)
+    train_ds, val_ds, test_ds, classes, input_dim, num_train_examples, num_eval_examples = data_loader.load_data(args.registry_path)
 
-    training_pair = list(train_ds.take(1).as_numpy_iterator())[0]
+    ## training_pair = list(train_ds.take(1).as_numpy_iterator())[0]
+    ## num_classes = len(classes)
+    ## input_dim = training_pair[0].shape
+
+    ## num_train_examples = len(list(train_ds))
+    ## num_eval_examples = len(list(val_ds))
     num_classes = len(classes)
-    input_dim = training_pair[0].shape
-
-    num_train_examples = len(list(train_ds))
-    num_eval_examples = len(list(val_ds))
 
     # dimensions
     # num_train_examples, input_dim = train_x.shape
@@ -201,8 +207,8 @@ def train_and_evaluate(args):
         num_classes=num_classes,
         learning_rate=args.learning_rate)
 
-    training_dataset = train_ds.shuffle(buffer_size=1024).repeat(args.num_epochs).batch(args.batch_size)
-    validation_dataset = train_ds.shuffle(buffer_size=1024).repeat(args.num_epochs).batch(args.batch_size)
+    training_dataset = train_ds.shuffle(args.buffer_size).repeat(args.num_epochs).batch(args.batch_size)
+    validation_dataset = train_ds.shuffle(args.buffer_size).repeat(args.num_epochs).batch(args.batch_size)
     test_dataset = test_ds.batch(args.batch_size)
     # # Pass a numpy array by passing DataFrame.values
     # training_dataset = model.input_fn(
@@ -263,11 +269,13 @@ def train_and_evaluate(args):
         metrics = history.history
         logging.info(metrics)
         keras_model.summary()
-        mlflow.log_param('images_path', args.images_path)
-        mlflow.log_param('annotations_path', args.annotations_path)
-        mlflow.log_param('n_samples', args.n_samples)
+        # mlflow.log_param('images_path', args.images_path)
+        # mlflow.log_param('annotations_path', args.annotations_path)
+        # mlflow.log_param('n_samples', args.n_samples)
+        mlflow.log_param('registry_path', args.registry_path)
         mlflow.log_param('num_epochs', args.num_epochs)
         mlflow.log_param('batch_size', args.batch_size)
+        mlflow.log_param('buffer_size', args.buffer_size)
         mlflow.log_param('learning_rate', args.learning_rate)
         mlflow.log_param('train_samples', num_train_examples)
         mlflow.log_param('eval_samples', num_eval_examples)
