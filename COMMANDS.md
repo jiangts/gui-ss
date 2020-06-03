@@ -107,7 +107,7 @@ https://medium.com/google-cloud-platform-by-cloud-ace/serverless-machine-learnin
 
 New commands:
 Tensorboard
-`tensorboard --logdir=gs://ui-scene-seg_training/jobs/`
+`tensorboard --logdir=gs://ui-scene-seg_training/jobs2/`
 
 To run locally
 ```
@@ -131,13 +131,8 @@ To run remotely
 export DATE=`date '+%Y%m%d_%H%M%S'`
 export JOB_NAME=mlflow_$DATE
 
-export SAMPLES=50000
-export BATCH_SIZE=16
-export TRAIN_STEPS=1000
-export EVAL_STEPS=1
-export JOB_DIR=mlflow
 export REGION=us-central1
-export GCS_JOB_DIR=gs://ui-scene-seg_training/jobs/$JOB_NAME
+export GCS_JOB_DIR=gs://ui-scene-seg_training/jobs2/$JOB_NAME
 gcloud ai-platform jobs submit training $JOB_NAME \
  --stream-logs \
  --runtime-version 2.1 \
@@ -148,8 +143,8 @@ gcloud ai-platform jobs submit training $JOB_NAME \
  --region $REGION \
  --scale-tier basic-tpu \
  -- \
- --train-steps $TRAIN_STEPS \
- --batch-size=$BATCH_SIZE \
- --eval-steps $EVAL_STEPS \
- --n_samples=$SAMPLES
+ --train-steps 1000 \
+ --batch-size=64 \
+ --buffer-size=128 \
+ --eval-steps 1 \
  ```
